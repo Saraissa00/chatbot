@@ -1,8 +1,15 @@
-# File Q&A Bot
+# Chatbot
 
-A tiny real AI project: upload a file, then ask it questions — it answers only from that file's content, using a free OpenRouter model. Built so you have a real, working AI agent to point your AI Tester tool at.
+![demo](docs/chatbot-demo.gif)
 
-The API key lives in one local file (`.env`), set once. After that, nobody using the app — you, a teammate, or the AI Tester tool — ever needs to type in a key.
+A small self-contained AI chatbot: a FastAPI backend and one plain HTML/JS page, no build step, no framework. It works two ways, switched with a toggle in the page itself:
+
+- **General Chat** (default) — answers like a normal assistant, from its own knowledge.
+- **From Document** — upload a file (`.txt`, `.pdf`, `.docx`, `.csv`) and it answers strictly from that file's content, refusing anything outside it.
+
+It remembers the last few messages of the conversation, so follow-up questions work naturally, and it automatically switches between three different free AI providers if one runs out of quota — so it keeps answering without you having to do anything.
+
+![screenshot](docs/chatbot-screenshot.jpg)
 
 ## 1. One-time setup: add your key(s)
 
@@ -16,18 +23,18 @@ That's it — you never do this again, and no key ever appears anywhere in the a
 
 ### Automatic fallback when a free tier runs out
 
-The app tries models in this order:
+The app tries providers in this order:
 1. **Google: Gemma 4 26B A4B (free)** on OpenRouter — primary. Efficient MoE model, big context, good general Q&A quality.
 2. **Google: Gemma 4 31B (free)** on OpenRouter — same-provider backup if the first is temporarily overloaded (OpenRouter's own built-in model fallback).
-3. **Groq** — a completely different company with its own separate free quota, used only if OpenRouter's account-wide free limit is hit (OpenRouter's free cap is per account, not per model, so switching models alone doesn't help once *that's* exhausted — a different provider does).
-4. **Cerebras** — a third, separate company with its own separate free quota, used only if both OpenRouter and Groq are exhausted or down. Same reasoning as Groq: a different company's quota is the only thing that helps once an account-wide limit is hit.
+3. **Groq** — a completely different company with its own separate free quota, used only if OpenRouter is exhausted or down (OpenRouter's free cap is per account, not per model, so switching models alone doesn't help once *that's* exhausted — a different provider does).
+4. **Cerebras** — a third, separate company with its own separate free quota, used only if both OpenRouter and Groq are exhausted or down.
 
 `.env` has `GROQ_API_KEY=` and `CEREBRAS_API_KEY=` lines for steps 3 and 4. Get a free Groq key at **console.groq.com/keys** and a free Cerebras key at **cloud.cerebras.ai** (Platform → API Keys), and paste each in the same way as the OpenRouter one. Leave either blank if you don't want that fallback — the app just uses whichever keys are actually filled in.
 
-Every bot reply in the chat page now shows a small **"via OpenRouter" / "via Groq" / "via Cerebras"** tag underneath it, so you can tell at a glance which one actually answered — handy for noticing when your primary free tier has run out for the day.
+Every bot reply shows a small **"via OpenRouter" / "via Groq" / "via Cerebras"** tag underneath it, so you can tell at a glance which one actually answered.
 
-⚠️ Two model IDs are unconfirmed spellings, not verified by me directly:
-- `google/gemma-4-31b-it:free` — inferred from the same naming pattern as the 26B one (which *was* confirmed from your own OpenRouter code sample).
+⚠️ Two model IDs are unconfirmed spellings, not verified directly:
+- `google/gemma-4-31b-it:free` — inferred from the same naming pattern as the 26B one (which *was* confirmed from OpenRouter's own code sample).
 - `llama3.1-8b` (Cerebras) — Cerebras's free-tier model name at the time this was written, not independently confirmed.
 
 If either errors, open the provider's own docs/dashboard and check the exact model string matches what's in `PROVIDERS` in `app.py` — edit it there if it doesn't.
@@ -40,8 +47,6 @@ cd "C:\Users\USER\OneDrive - Balqa Applied University\Desktop\projects\Chatbot\C
 pip install -r requirements.txt
 ```
 
-(Already done for you — skip this unless you're setting it up on a different machine.)
-
 ## 3. Run the server
 
 ```
@@ -50,28 +55,28 @@ cd "C:\Users\USER\OneDrive - Balqa Applied University\Desktop\projects\Chatbot\C
 uvicorn app:app --port 8600
 ```
 
-Leave that running. The server is now at `http://localhost:8600` — no key prompt, no login, it just works.
+Leave that running, then open **http://localhost:8600** — that's the chat page itself. No key prompt, no login, it just works.
 
-## 4. Try it yourself first (no coding needed)
+## How it behaves
 
-Open `http://localhost:8600/docs` in your browser — that's an interactive test page.
-- Expand **POST /upload**, click "Try it out", choose a file (txt/pdf/docx/csv), click Execute.
-- Expand **POST /chat**, click "Try it out", type `{"question": "your question here"}`, click Execute — you'll get the answer back.
+- **General Chat** is the default view. Switch to **From Document** and the upload control appears; switch back and it's hidden again, since it's meaningless outside document mode.
+- **Conversation memory** — it remembers the last 10 exchanges, so a follow-up like "what about the other one?" resolves correctly without repeating context. Uploading a new file, or hitting **Clear**, starts the conversation over.
+- **Greetings** ("hi", "hey", "thanks", …) are recognized instantly by pattern-matching, not by asking the AI — so they're answered consistently even with typos, and cost no API call.
+- In Document mode, if something isn't in the file, it says so clearly instead of a bare "I don't know" — e.g. *"I couldn't find that in the uploaded document — I can only answer questions about it."*
 
-## 5. Point your AI Tester tool at it
+## Testing this against another tool (e.g. an AI-assessment app)
 
-In the AI Tester app, Test & Score tab → API (HTTP):
+Because it's a real HTTP API, you can point any external testing tool at it directly:
 - **API endpoint URL**: `http://localhost:8600/chat`
 - **Authentication**: None
-- **Request body template**: `{"question": "{{question}}"}`  (this is already the default)
-- **Response is plain text**: leave unchecked
-- **Where's the answer in the response?**: `answer`  (this is already the default)
+- **Request body**: `{"question": "your question", "mode": "general"}` (or `"mode": "document"` after uploading a file via `/upload`)
+- **Answer is at**: `answer` in the JSON response
 
-Upload the same file to the bot first (step 4), then it's ready — every question the AI Tester sends will get answered from that file, and no one testing it ever sees or needs the API key.
+You can also try it manually via the interactive API docs at `http://localhost:8600/docs`, without writing any code.
 
 ## Notes
 
-- Only one file is "remembered" at a time — uploading a new one replaces the old one.
-- The server keeps the file's text in memory only; nothing is saved to disk, and it's forgotten when you stop the server.
-- Free models — fine for testing, not for production traffic.
-- `.env` is in `.gitignore` — if this folder is ever pushed to GitHub, the key stays local and is never uploaded.
+- Only one document is ever "remembered" at a time — uploading a new one replaces the last and starts the conversation over.
+- Everything lives in memory only. Stopping the server forgets the document and the whole conversation.
+- Free-tier models — fine for testing and demos, not sized for real production traffic.
+- `.env` is in `.gitignore` — your keys stay local and are never committed or uploaded.
