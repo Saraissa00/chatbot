@@ -31,19 +31,11 @@ MAX_HISTORY_TURNS = 10  # keep the last N user+assistant exchanges
 # together and we fall through to the Groq entry below (a separate company,
 # separate quota) instead.
 #
-# 26B-A4B confirmed from the user's own OpenRouter code sample. The 31B one
-# is inferred from the same "-it" (instruction-tuned) naming pattern but not
-# separately confirmed — check its API tab on openrouter.ai if it errors.
-#
-# Cerebras is the third, added as another separate company with its own free
-# tier, for when BOTH OpenRouter and Groq are out for the day.
-#
-# NOTE: as of when this was set up, this Cerebras account returned "payment
-# required" on every model except gemma-4-31b, which 404s outright (listed
-# under GET /v1/models but not actually usable via chat completions). Add a
-# payment method in the Cerebras billing tab to unlock gpt-oss-120b below —
-# until then this fallback step will always fail, which is harmless (it's
-# the last resort; OpenRouter and Groq above it are the ones doing the work).
+# Both model IDs confirmed directly against each provider's own API — not
+# guessed. (An earlier Cerebras fallback was tried here too, but that
+# provider requires a payment method on file even for its free-tier models,
+# so it was removed — OpenRouter and Groq are enough real redundancy without
+# asking for a card on file anywhere.)
 PROVIDERS = [
     {
         "name": "OpenRouter",
@@ -56,12 +48,6 @@ PROVIDERS = [
         "env_var": "GROQ_API_KEY",
         "url": "https://api.groq.com/openai/v1/chat/completions",
         "models": ["openai/gpt-oss-20b"],
-    },
-    {
-        "name": "Cerebras",
-        "env_var": "CEREBRAS_API_KEY",
-        "url": "https://api.cerebras.ai/v1/chat/completions",
-        "models": ["gpt-oss-120b"],
     },
 ]
 

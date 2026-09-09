@@ -29,15 +29,12 @@ The app tries providers in this order:
 1. **Google: Gemma 4 26B A4B (free)** on OpenRouter — primary. Efficient MoE model, big context, good general Q&A quality.
 2. **Google: Gemma 4 31B (free)** on OpenRouter — same-provider backup if the first is temporarily overloaded (OpenRouter's own built-in model fallback).
 3. **Groq** — a completely different company with its own separate free quota, used only if OpenRouter is exhausted or down (OpenRouter's free cap is per account, not per model, so switching models alone doesn't help once *that's* exhausted — a different provider does).
-4. **Cerebras** — a third, separate company with its own separate free quota, used only if both OpenRouter and Groq are exhausted or down.
 
-`.env` has `GROQ_API_KEY=` and `CEREBRAS_API_KEY=` lines for steps 3 and 4. Get a free Groq key at **console.groq.com/keys** and a free Cerebras key at **cloud.cerebras.ai** (Platform → API Keys), and paste each in the same way as the OpenRouter one. Leave either blank if you don't want that fallback — the app just uses whichever keys are actually filled in.
+`.env` has a `GROQ_API_KEY=` line for step 3. Get a free key at **console.groq.com/keys** and paste it in the same way as the OpenRouter one. Leave it blank if you don't want this fallback — the app just uses whichever keys are actually filled in.
 
-Every bot reply shows a small **"via OpenRouter" / "via Groq" / "via Cerebras"** tag underneath it, so you can tell at a glance which one actually answered.
+Every bot reply shows a small **"via OpenRouter" / "via Groq"** tag underneath it, so you can tell at a glance which one actually answered.
 
-Both `google/gemma-4-31b-it:free` (OpenRouter) and `gpt-oss-120b` (Cerebras) are confirmed real, valid model IDs — checked directly against each provider's own API.
-
-⚠️ Cerebras needs one more thing before it can actually answer anything: **a payment method on file**, even to use its nominally free models. Without one, every Cerebras request returns "payment required," and the app silently falls back to whichever provider comes next — harmless, since Cerebras is the last resort and OpenRouter + Groq are the two doing the real work. Add a card in the Cerebras billing tab (cloud.cerebras.ai) to actually enable this fallback.
+Both model IDs are confirmed real, valid IDs — checked directly against each provider's own API, not guessed. (A third fallback via Cerebras was tried too, but that provider requires a payment method on file even for its free-tier models, so it was dropped — two real, genuinely free providers is enough redundancy without needing a card on file anywhere.)
 
 ## 2. Install dependencies (only needed once)
 
