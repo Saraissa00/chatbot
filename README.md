@@ -13,9 +13,11 @@ It remembers the last few messages of the conversation, so follow-up questions w
 
 ## 1. One-time setup: add your key(s)
 
-1. Get a free key at **openrouter.ai/keys** (starts with `sk-or-`).
-2. Open the `.env` file in this folder (plain text file, opens in Notepad).
-3. Paste it after `OPENROUTER_API_KEY=`, so it reads like:
+`.env` holds your real keys and is gitignored, so it's never in the repo — if you just cloned this, create it first:
+
+1. Copy `.env.example` to a new file named `.env` in this folder.
+2. Get a free key at **openrouter.ai/keys** (starts with `sk-or-`).
+3. Open `.env` (plain text file, opens in Notepad) and paste it after `OPENROUTER_API_KEY=`, so it reads like:
    `OPENROUTER_API_KEY=sk-or-v1-xxxxxxxx`
 4. Save the file.
 
