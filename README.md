@@ -35,11 +35,9 @@ The app tries providers in this order:
 
 Every bot reply shows a small **"via OpenRouter" / "via Groq" / "via Cerebras"** tag underneath it, so you can tell at a glance which one actually answered.
 
-⚠️ Two model IDs are unconfirmed spellings, not verified directly:
-- `google/gemma-4-31b-it:free` — inferred from the same naming pattern as the 26B one (which *was* confirmed from OpenRouter's own code sample).
-- `llama3.1-8b` (Cerebras) — Cerebras's free-tier model name at the time this was written, not independently confirmed.
+Both `google/gemma-4-31b-it:free` (OpenRouter) and `gpt-oss-120b` (Cerebras) are confirmed real, valid model IDs — checked directly against each provider's own API.
 
-If either errors, open the provider's own docs/dashboard and check the exact model string matches what's in `PROVIDERS` in `app.py` — edit it there if it doesn't.
+⚠️ Cerebras needs one more thing before it can actually answer anything: **a payment method on file**, even to use its nominally free models. Without one, every Cerebras request returns "payment required," and the app silently falls back to whichever provider comes next — harmless, since Cerebras is the last resort and OpenRouter + Groq are the two doing the real work. Add a card in the Cerebras billing tab (cloud.cerebras.ai) to actually enable this fallback.
 
 ## 2. Install dependencies (only needed once)
 

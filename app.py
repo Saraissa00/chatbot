@@ -36,9 +36,14 @@ MAX_HISTORY_TURNS = 10  # keep the last N user+assistant exchanges
 # separately confirmed — check its API tab on openrouter.ai if it errors.
 #
 # Cerebras is the third, added as another separate company with its own free
-# tier, for when BOTH OpenRouter and Groq are out for the day. Its model name
-# hasn't been independently confirmed either — check cloud.cerebras.ai if it
-# errors, same as the 31B note above.
+# tier, for when BOTH OpenRouter and Groq are out for the day.
+#
+# NOTE: as of when this was set up, this Cerebras account returned "payment
+# required" on every model except gemma-4-31b, which 404s outright (listed
+# under GET /v1/models but not actually usable via chat completions). Add a
+# payment method in the Cerebras billing tab to unlock gpt-oss-120b below —
+# until then this fallback step will always fail, which is harmless (it's
+# the last resort; OpenRouter and Groq above it are the ones doing the work).
 PROVIDERS = [
     {
         "name": "OpenRouter",
@@ -56,7 +61,7 @@ PROVIDERS = [
         "name": "Cerebras",
         "env_var": "CEREBRAS_API_KEY",
         "url": "https://api.cerebras.ai/v1/chat/completions",
-        "models": ["llama3.1-8b"],
+        "models": ["gpt-oss-120b"],
     },
 ]
 
