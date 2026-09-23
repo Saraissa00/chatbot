@@ -86,6 +86,6 @@ Interactive API docs are also available at `http://localhost:8600/docs`.
 ## Tech Stack
 
 - **FastAPI** — backend and HTTP API
-- **Vanilla HTML/JS** — frontend, no build step or framework
+- **HTML/JS** — frontend, no build step or framework
 - **OpenRouter + Groq** — free-tier LLM providers with automatic fallback
 - **Render** — deployment
