@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chatbot</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; color: #1a1a2e; }
+  h1 { font-size: 1.4rem; }
+  .upload-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  #fileStatus { font-size: 0.85rem; color: #666; margin-bottom: 20px; }
+  #log { border: 1px solid #ddd; border-radius: 8px; padding: 12px; height: 420px; overflow-y: auto; margin-bottom: 12px; background: #fafafa; }
+  .msg { margin-bottom: 12px; line-height: 1.4; }
+  .msg .who { font-weight: 600; margin-right: 6px; }
+  .msg.user .who { color: #2563eb; }
+  .msg.bot .who { color: #16a34a; }
+  .msg.error .who { color: #dc2626; }
+  .msg .provider { display: block; font-size: 0.72rem; color: #9ca3af; margin-top: 2px; }
+  .input-row { display: flex; gap: 8px; }
+  #question { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+  button { padding: 10px 16px; border: none; border-radius: 6px; background: #2563eb; color: white; font-size: 1rem; cursor: pointer; }
+  button:disabled { background: #999; cursor: not-allowed; }
+  button.secondary { background: #6b7280; }
+  .mode-row { display: flex; gap: 0; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; width: fit-content; }
+  .mode-btn { background: white; color: #333; border-radius: 0; padding: 8px 14px; font-size: 0.9rem; }
+  .mode-btn.active { background: #2563eb; color: white; }
+</style>
+</head>
+<body>
+  <h1>Chatbot</h1>
+
+  <div class="mode-row">
+    <button class="mode-btn" id="modeDocBtn" onclick="setMode('document')">📄 From Document</button>
+    <button class="mode-btn active" id="modeGeneralBtn" onclick="setMode('general')">💬 General Chat</button>
+  </div>
+
+  <div class="upload-row" id="uploadRow" style="display: none;">
+    <input type="file" id="fileInput">
+    <button class="secondary" onclick="uploadFile()">Upload</button>
+  </div>
+  <div id="fileStatus" style="display: none;">No file uploaded yet.</div>
+
+  <div id="log"></div>
+
+  <div class="input-row">
+    <input type="text" id="question" placeholder="Ask a question about the uploaded file..." onkeydown="if(event.key==='Enter') sendQuestion()">
+    <button id="sendBtn" onclick="sendQuestion()">Send</button>
+    <button class="secondary" onclick="clearChat()">Clear</button>
+  </div>
+
+<script>
+const log = document.getElementById('log');
+const fileStatus = document.getElementById('fileStatus');
+const sendBtn = document.getElementById('sendBtn');
+let mode = 'general';
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('modeDocBtn').classList.toggle('active', m === 'document');
+  document.getElementById('modeGeneralBtn').classList.toggle('active', m === 'general');
+  const showUpload = m === 'document';
+  document.getElementById('uploadRow').style.display = showUpload ? 'flex' : 'none';
+  fileStatus.style.display = showUpload ? 'block' : 'none';
+}
+
+async function clearChat() {
+  log.innerHTML = '';
+  try { await fetch('/clear', { method: 'POST' }); } catch (e) {}
+}
+
+function addMessage(who, text, cls, provider) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.innerHTML = '<span class="who">' + who + ':</span>' + text;
+  if (provider) {
+    const tag = document.createElement('span');
+    tag.className = 'provider';
+    tag.textContent = 'via ' + provider;
+    div.appendChild(tag);
+  }
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function uploadFile() {
+  const input = document.getElementById('fileInput');
+  if (!input.files.length) { fileStatus.textContent = 'Choose a file first.'; return; }
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+  fileStatus.textContent = 'Uploading...';
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) { fileStatus.textContent = 'Error: ' + data.detail; return; }
+    fileStatus.textContent = 'Loaded "' + data.filename + '" (' + data.characters + ' characters). Ask away!';
+  } catch (e) {
+    fileStatus.textContent = 'Upload failed: ' + e;
+  }
+}
+
+async function sendQuestion() {
+  const input = document.getElementById('question');
+  const question = input.value.trim();
+  if (!question) return;
+  addMessage('You', question, 'user');
+  input.value = '';
+  sendBtn.disabled = true;
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, mode })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      addMessage('Error', data.detail, 'error');
+    } else {
+      addMessage('Bot', data.answer, 'bot', data.provider);
+    }
+  } catch (e) {
+    addMessage('Error', String(e), 'error');
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
